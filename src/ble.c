@@ -26,14 +26,6 @@ esp_err_t ble_gatt_server_init(ble_gatt_profile_t * profiles, uint8_t num_profil
         }
     }
 
-    
-
-    
-
-
-
-    
-
 }
 
 esp_err_t start_bt_controller(esp_bt_mode_t bt_mode) {

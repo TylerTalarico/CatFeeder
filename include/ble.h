@@ -2,8 +2,8 @@
 
 #define BLE_DEVICE_NAME "Pawto Feeder"
 
-#define NUM_SERVICES 3
-#define NUM_CHARACTERISTICS 2
+#define NUM_SERVICES 2
+#define NUM_CHARACTERISTICS 3
 
 typedef struct {
     uint16_t char_handle;
