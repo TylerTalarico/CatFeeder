@@ -12,7 +12,7 @@ esp_err_t start_bt_controller(esp_bt_mode_t bt_mode);
 esp_err_t gatt_profile_init();
 
 
-esp_err_t ble_gatt_server_init(ble_gatt_profile_t * profiles, uint8_t num_profiles) {
+esp_err_t ble_gatt_server_init() {
     
     esp_err_t ret;
     
@@ -20,10 +20,9 @@ esp_err_t ble_gatt_server_init(ble_gatt_profile_t * profiles, uint8_t num_profil
         return ret;
     }
 
-    for (uint8_t i = 0; i < num_profiles; i++) {
-        if ((ret = esp_ble_gatts_app_register(profiles[i].app_id)) != ESP_OK) {
-            return ret;
-        }
+
+    if ((ret = esp_ble_gatts_app_register(0)) != ESP_OK) {
+        return ret;
     }
 
 }
