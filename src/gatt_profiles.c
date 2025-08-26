@@ -7,7 +7,9 @@
 #include "esp_bt_defs.h"
 #include "esp_bt_main.h"
 #include "esp_gatt_common_api.h"
+#include "esp_log.h"
 
+#include "gatt_profiles.h"
 #include "gatt_services.h"
 #include "gatt_data.h"
 
@@ -42,11 +44,15 @@ static const uint16_t GATTS_CHAR_PORTIONS_UUID              = 0xFF01;
 static const uint16_t GATTS_CHAR_MEASUREMENT_UUID       = 0x2A9D;
 static const uint16_t GATTS_CHAR_EVENTS_UUID       = 0xFF03;
 
-static const uint8_t primary_service_uuid[ESP_UUID_LEN_128] = { 0x61,0x03,0xce,0xb5,0xbb,0x86,0x48,0x7f,0x9c,0x9a,0x28,0x56,0xec,0xc4,0x54,0xe1 };
+static const uint8_t primary_service_uuid[ESP_UUID_LEN_128] = {
+    /* LSB <--------------------------------------------------------------------------------> MSB */
+    //first uuid, 16bit, [12],[13] is the value
+    0xfb, 0x34, 0x9b, 0x5f, 0x80, 0x00, 0x00, 0x80, 0x00, 0x10, 0x00, 0x00, 0xFF, 0x00, 0x00, 0x00,
+};
 static const uint16_t char_declaration_uuid   = ESP_GATT_UUID_CHAR_DECLARE;
 static const uint16_t char_client_config_uuid = ESP_GATT_UUID_CHAR_CLIENT_CONFIG;
 static const uint8_t char_prop_read                =  ESP_GATT_CHAR_PROP_BIT_READ;
-static const uint8_t char_prop_write               = ESP_GATT_CHAR_PROP_BIT_WRITE;
+//static const uint8_t char_prop_write               = ESP_GATT_CHAR_PROP_BIT_WRITE;
 static const uint8_t char_prop_read_write_notify   = ESP_GATT_CHAR_PROP_BIT_WRITE | ESP_GATT_CHAR_PROP_BIT_READ | ESP_GATT_CHAR_PROP_BIT_NOTIFY;
 static const uint8_t bowl_weight_ccc[2]      = {0x00, 0x00};
 
@@ -116,7 +122,7 @@ static esp_ble_adv_data_t adv_data = {
     .p_manufacturer_data =  NULL, //&test_manufacturer[0],
     .service_data_len = 0,
     .p_service_data = NULL,
-    .service_uuid_len = NUM_SERVICES*ESP_UUID_LEN_128,
+    .service_uuid_len = ESP_UUID_LEN_128,
     .p_service_uuid = &primary_service_uuid[0],
     .flag = (ESP_BLE_ADV_FLAG_GEN_DISC | ESP_BLE_ADV_FLAG_BREDR_NOT_SPT)
 };
@@ -159,13 +165,13 @@ static void gatts_default_profile_event_handler(esp_gatts_cb_event_t event, esp_
             //config adv data
             esp_err_t ret = esp_ble_gap_config_adv_data(&adv_data);
             if (ret){
-                ESP_LOGE(GATTS_TAG, "config adv data failed, error code = %x", ret);
+                //ESP_LOGE(GATTS_TAG, "config adv data failed, error code = %x", ret);
             }
             adv_config_done |= ADV_CONFIG_FLAG;
             //config scan response data
             ret = esp_ble_gap_config_adv_data(&scan_rsp_data);
             if (ret){
-                ESP_LOGE(GATTS_TAG, "config scan response data failed, error code = %x", ret);
+                //ESP_LOGE(GATTS_TAG, "config scan response data failed, error code = %x", ret);
             }
             adv_config_done |= SCAN_RSP_CONFIG_FLAG;
 
@@ -194,7 +200,8 @@ static void gatts_default_profile_event_handler(esp_gatts_cb_event_t event, esp_
 
         case ESP_GATTS_READ_EVT: 
         {
-            ESP_LOGI(GATTS_TAG, "GATT_READ_EVT, conn_id %d, trans_id %d, handle %d\n", param->read.conn_id, param->read.trans_id, param->read.handle);
+            ESP_LOGI(GATTS_TAG, "GATT_READ_EVT, conn_id %d, trans_id %d, handle %d\n", 
+                (int)param->read.conn_id, (int)param->read.trans_id, (int)param->read.handle);
             esp_gatt_rsp_t rsp;
             memset(&rsp, 0, sizeof(esp_gatt_rsp_t));
             
@@ -277,3 +284,29 @@ static void gatts_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_t gatts_
     } while (0);
 }
 
+esp_err_t gatt_init_gatts_gap() {
+    esp_err_t ret = esp_ble_gatts_register_callback(gatts_event_handler);
+    if (ret){
+        ESP_LOGE(GATTS_TABLE_TAG, "gatts register error, error code = %x", ret);
+        return ret;
+    }
+
+    ret = esp_ble_gap_register_callback(gap_event_handler);
+    if (ret){
+        ESP_LOGE(GATTS_TABLE_TAG, "gap register error, error code = %x", ret);
+        return ret;
+    }
+
+    ret = esp_ble_gatts_app_register(0);
+    if (ret){
+        ESP_LOGE(GATTS_TABLE_TAG, "gatts app register error, error code = %x", ret);
+        return ret;
+    }
+
+    ret = esp_ble_gatt_set_local_mtu(500);
+    if (ret){
+        ESP_LOGE(GATTS_TABLE_TAG, "set local  MTU failed, error code = %x", ret);
+    }
+
+    return ret;
+}
