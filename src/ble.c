@@ -18,13 +18,17 @@ esp_err_t ble_init() {
     
     esp_err_t ret;
     
+    /*
     if ((ret = start_bt_controller(ESP_BT_MODE_BLE)) != ESP_OK) {
         return ret;
     }
+    */
 
-    if ((ret = gatt_init_gatts_gap()) != ESP_OK) {
+    
+    if ((ret = ble_init_gatts_gap()) != ESP_OK) {
         return ret;
     }
+    
     
     return ESP_OK;
 }

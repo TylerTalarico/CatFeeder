@@ -27,4 +27,4 @@ typedef struct {
 
 } ble_gatt_profile_t;
 
-esp_err_t gatt_init_gatts_gap();
+esp_err_t ble_init_gatts_gap(void);
