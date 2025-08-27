@@ -1,10 +1,11 @@
-#if 0
+#if 1
 
 #include "esp_gatt_common_api.h"
 #include "driver/gpio.h"
 #include "led.h"
 #include "ble.h"
 #include "gatt_data.h"
+#include "gatt_profiles.h"
 
 led_t blue_led;
 
@@ -14,6 +15,7 @@ void app_main() {
     ble_init();
     
     
+    uint32_t cnt = 0;
     while (1) 
     {
         #if 0
@@ -23,8 +25,11 @@ void app_main() {
 
         #else
 
-        
-        gattd_dispense_amounts[0]++;
+        if (cnt++ == 10000000) {
+            gattd_bowl_weight[0]++;
+            gatts_update_attrs();
+            cnt = 0;
+        }
 
         if (gattd_dispense_amounts[0] > 127)
         {

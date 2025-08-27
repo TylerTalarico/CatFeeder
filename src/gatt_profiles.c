@@ -175,6 +175,7 @@ static const uint16_t primary_service_uuid         = ESP_GATT_UUID_PRI_SERVICE;
 static const uint16_t character_declaration_uuid   = ESP_GATT_UUID_CHAR_DECLARE;
 static const uint16_t character_client_config_uuid = ESP_GATT_UUID_CHAR_CLIENT_CONFIG;
 static const uint8_t char_prop_read                =  ESP_GATT_CHAR_PROP_BIT_READ;
+static const uint8_t char_prop_read_notify         =  ESP_GATT_CHAR_PROP_BIT_READ | ESP_GATT_CHAR_PROP_BIT_NOTIFY;
 //static const uint8_t char_prop_write               = ESP_GATT_CHAR_PROP_BIT_WRITE;
 static const uint8_t char_prop_read_write_notify   = ESP_GATT_CHAR_PROP_BIT_WRITE | ESP_GATT_CHAR_PROP_BIT_READ | ESP_GATT_CHAR_PROP_BIT_NOTIFY;
 static const uint8_t bowl_weight_ccc[2]      = {0x02, 0x00};
@@ -202,7 +203,7 @@ static const esp_gatts_attr_db_t gatt_db[HRS_IDX_NB] =
       /* Characteristic Declaration */
     [IDX_CHAR_MEASUREMENT]     =
     {{ESP_GATT_AUTO_RSP}, {ESP_UUID_LEN_16, (uint8_t *)&character_declaration_uuid, ESP_GATT_PERM_READ,
-      CHAR_DECLARATION_SIZE, CHAR_DECLARATION_SIZE, (uint8_t *)&char_prop_read}},
+      CHAR_DECLARATION_SIZE, CHAR_DECLARATION_SIZE, (uint8_t *)&char_prop_read_notify}},
 
     /* Characteristic Value */
     [IDX_CHAR_MEASUREMENT_VAL] =
@@ -229,6 +230,7 @@ static const esp_gatts_attr_db_t gatt_db[HRS_IDX_NB] =
 
 static void gap_event_handler(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param_t *param)
 {
+    
     switch (event) {
     #ifdef CONFIG_SET_RAW_ADV_DATA
         case ESP_GAP_BLE_ADV_DATA_RAW_SET_COMPLETE_EVT:
@@ -392,19 +394,25 @@ static void gatts_profile_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_
                 // the data length of gattc write  must be less than GATTS_DEMO_CHAR_VAL_LEN_MAX.
                 ESP_LOGI(GATTS_TABLE_TAG, "GATT_WRITE_EVT, handle = %d, value len = %d, value :", param->write.handle, param->write.len);
                 ESP_LOG_BUFFER_HEX(GATTS_TABLE_TAG, param->write.value, param->write.len);
+                uint16_t len;
+                const uint8_t * ptr;
+                esp_ble_gatts_get_attr_value(
+                    param->write.handle, 
+                    &len, 
+                    (const uint8_t **)&ptr 
+                );
+                for (int i = 0; i < NUM_ATTR; i++) {
+                    if (schedule_handle_table[i] == param->write.handle) {
+                        memcpy(gatt_db[i].att_desc.value, ptr, len);
+                        break;
+                    }
+                }
 
                 if (schedule_handle_table[IDX_CHAR_MEASUREMENT_CFG] == param->write.handle && param->write.len == 2){
                     uint16_t descr_value = param->write.value[1]<<8 | param->write.value[0];
                     if (descr_value == 0x0001){
                         ESP_LOGI(GATTS_TABLE_TAG, "notify enable");
-                        uint8_t notify_data[15];
-                        for (int i = 0; i < sizeof(notify_data); ++i)
-                        {
-                            notify_data[i] = i % 0xff;
-                        }
-                        //the size of notify_data[] need less than MTU size
-                        esp_ble_gatts_send_indicate(gatts_if, param->write.conn_id, schedule_handle_table[IDX_CHAR_MEASUREMENT_VAL],
-                                                sizeof(notify_data), notify_data, false);
+
                     }else if (descr_value == 0x0002){
                         ESP_LOGI(GATTS_TABLE_TAG, "indicate enable");
                         uint8_t indicate_data[15];
@@ -412,9 +420,6 @@ static void gatts_profile_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_
                         {
                             indicate_data[i] = i % 0xff;
                         }
-
-                        // if want to change the value in server database, call:
-                        // esp_ble_gatts_set_attr_value(schedule_handle_table[IDX_CHAR_MEASUREMENT_VAL], sizeof(indicate_data), indicate_data);
 
 
                         //the size of indicate_data[] need less than MTU size
@@ -433,6 +438,7 @@ static void gatts_profile_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_
                 if (param->write.need_rsp){
                     esp_ble_gatts_send_response(gatts_if, param->write.conn_id, param->write.trans_id, ESP_GATT_OK, NULL);
                 }
+
             }else{
                 /* handle prepare write */
                 prepare_write_event_env(gatts_if, &prepare_write_env, param);
@@ -484,6 +490,7 @@ static void gatts_profile_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_
             }
             break;
         }
+        case ESP_GATTS_SET_ATTR_VAL_EVT:
         case ESP_GATTS_STOP_EVT:
         case ESP_GATTS_OPEN_EVT:
         case ESP_GATTS_CANCEL_OPEN_EVT:
@@ -588,4 +595,12 @@ esp_err_t ble_init_gatts_gap(void)
         ESP_LOGE(GATTS_TABLE_TAG, "set local  MTU failed, error code = %x", ret);
     }
     return ret;
+}
+
+void gatts_update_attrs(void) {
+    esp_ble_gatts_set_attr_value(
+        schedule_handle_table[IDX_CHAR_MEASUREMENT_VAL], 
+        gatt_db[IDX_CHAR_MEASUREMENT_VAL].att_desc.max_length, 
+        gatt_db[IDX_CHAR_MEASUREMENT_VAL].att_desc.value
+    );
 }

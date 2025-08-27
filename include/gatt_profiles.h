@@ -28,3 +28,4 @@ typedef struct {
 } ble_gatt_profile_t;
 
 esp_err_t ble_init_gatts_gap(void);
+void gatts_update_attrs(void);
