@@ -1,5 +1,5 @@
 #include "gatt_data.h"
 
-uint8_t gattd_dispense_amounts[24] = {0};
-uint16_t gattd_bowl_weight[2] = {10,20};
-uint8_t gattd_events[256] = {0};
+extern feed_alarm_t gattd_dispense_amounts[6] = {0};
+extern uint16_t gattd_bowl_weight[2] = {0};
+extern uint8_t gattd_events[256] = {0};
