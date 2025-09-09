@@ -361,18 +361,8 @@ static void gatts_default_event_handler(uint16_t app_id, esp_gatts_cb_event_t ev
             break;
         case ESP_GATTS_ADD_CHAR_EVT:
             break;
-        case ESP_GATTS_ADD_CHAR_DESCR_EVT: {
-            for (uint8_t i = 0; i < prof->num_svcs; i++) {
-                for (uint8_t j = 0; j < prof->svcs[i].num_chars; j++) {
-                    if (prof->svcs[i].chars[j].ccc == 0xFFFF && (prof->svcs[i].chars[j].props & ESP_GATT_CHAR_PROP_BIT_NOTIFY)) {
-                        prof->svcs[i].chars[j].ccc_handle = param->add_char_descr.attr_handle;
-                        prof->svcs[i].chars[j].ccc = 0x0000;
-                        return;
-                    }
-                }
-            }
+        case ESP_GATTS_ADD_CHAR_DESCR_EVT:
             break;
-        }
         case ESP_GATTS_READ_EVT:
             ESP_LOGI(GATTS_TABLE_TAG, "ESP_GATTS_READ_EVT");
        	    break;
