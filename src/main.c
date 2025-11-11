@@ -13,6 +13,7 @@
 #include "gatt_data.h"
 #include "ble_gatt_profiles.h"
 #include "ble_gatt_server.h"
+#include "motor.h"
 
 #define TAG_MAIN "MAIN"
 
@@ -48,12 +49,13 @@ void app_main() {
     ESP_LOGI(TAG_MAIN, "All components initialized");
     
     uint32_t cnt = 0;
+    motor_init();
     while (1) 
     {
-        #if 0
+        #if 1
 
-        for (int i = 0; i < 100000000; i++);
-        led_toggle(&blue_led);
+        for(uint32_t i = 0; i < 10000000; i++);
+        run_motor(MOTOR_DIR_FWD, 1000);
 
         #else
 
