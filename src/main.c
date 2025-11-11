@@ -13,7 +13,9 @@
 #include "gatt_data.h"
 #include "ble_gatt_profiles.h"
 #include "ble_gatt_server.h"
+
 #include "motor.h"
+#include "stopwatch.h"
 
 #define TAG_MAIN "MAIN"
 
@@ -46,16 +48,27 @@ void app_main() {
     ESP_ERROR_CHECK(ret);
     ESP_LOGI(TAG_MAIN, "BLE init");
 
+    motor_handle_t motor;
+    ret = motor_init(&motor, GPIO_NUM_16, GPIO_NUM_17, GPIO_NUM_18);
+    ESP_ERROR_CHECK(ret);
+    ESP_LOGI(TAG_MAIN, "Motor init");
+
+    stopwatch_handle_t sw;
+    ret = stopwatch_init(&sw);
+    ESP_ERROR_CHECK(ret);
     ESP_LOGI(TAG_MAIN, "All components initialized");
     
-    uint32_t cnt = 0;
-    motor_init();
     while (1) 
     {
         #if 1
 
-        for(uint32_t i = 0; i < 10000000; i++);
-        run_motor(MOTOR_DIR_FWD, 1000);
+        led_set_state(&blue_led, 0);
+        stopwatch_reset_start(&sw, 1000);
+        while(!sw.done);
+
+        led_set_state(&blue_led, 1);
+        stopwatch_reset_start(&sw, 1000);
+        while(!sw.done);
 
         #else
 
