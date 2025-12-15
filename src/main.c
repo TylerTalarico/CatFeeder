@@ -16,6 +16,7 @@
 
 #include "motor.h"
 #include "stopwatch.h"
+#include "sensor_weight.h"
 
 #define TAG_MAIN "MAIN"
 
@@ -57,18 +58,25 @@ void app_main() {
     ret = stopwatch_init(&sw);
     ESP_ERROR_CHECK(ret);
     ESP_LOGI(TAG_MAIN, "All components initialized");
+
+    sensor_weight_handle_t sense_weighth;
+    sensor_weight_init(&sense_weighth, ADC2_CHANNEL_0);
     
     while (1) 
     {
         #if 1
 
         led_set_state(&blue_led, 0);
-        stopwatch_reset_start(&sw, 1000);
+        stopwatch_reset_start(&sw, 250);
         while(!sw.done);
 
         led_set_state(&blue_led, 1);
-        stopwatch_reset_start(&sw, 1000);
+        stopwatch_reset_start(&sw, 250);
         while(!sw.done);
+
+        ESP_LOGI(TAG_MAIN, "Reading: %.2f", sensor_weight_get_reading(&sense_weighth));
+
+        vTaskDelay(1);
 
         #else
 
