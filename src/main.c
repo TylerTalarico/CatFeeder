@@ -1,4 +1,8 @@
 #if 1
+
+#include <sys/time.h>
+#include <time.h>
+
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "freertos/event_groups.h"
@@ -16,7 +20,8 @@
 
 #include "motor.h"
 #include "stopwatch.h"
-#include "sensor_weight.h"
+#include "hx711.h"
+#include "clock.h"
 
 #define TAG_MAIN "MAIN"
 
@@ -54,18 +59,29 @@ void app_main() {
     ESP_ERROR_CHECK(ret);
     ESP_LOGI(TAG_MAIN, "Motor init");
 
-    stopwatch_handle_t sw;
-    ret = stopwatch_init(&sw);
-    ESP_ERROR_CHECK(ret);
-    ESP_LOGI(TAG_MAIN, "All components initialized");
+    // stopwatch_handle_t sw;
+    // ret = stopwatch_init(&sw);
+    // ESP_ERROR_CHECK(ret);
+    
+    hx711_t w_sense_h;
+    if (hx711_init(&w_sense_h, GPIO_NUM_18, GPIO_NUM_19) != ESP_OK) {
+        ESP_LOGI(TAG_MAIN, "Load Sensor failed to initialize. Exiting...");
+        return;
+    }
+    int32_t data = 0;
 
-    sensor_weight_handle_t sense_weighth;
-    sensor_weight_init(&sense_weighth, ADC2_CHANNEL_0);
+    custom_clock_t curr_time = {0};
+    custom_clock_t temp;
+    ret = clock_init();
+    ESP_ERROR_CHECK(ret);
+
+    ESP_LOGI(TAG_MAIN, "All components initialized");
     
     while (1) 
     {
         #if 1
 
+        /*
         led_set_state(&blue_led, 0);
         stopwatch_reset_start(&sw, 250);
         while(!sw.done);
@@ -73,10 +89,18 @@ void app_main() {
         led_set_state(&blue_led, 1);
         stopwatch_reset_start(&sw, 250);
         while(!sw.done);
+        */
+        hx711_get_value(&w_sense_h, &data);
+        //ESP_LOGI(TAG_MAIN, "Reading: %ld", data);
+        //ESP_LOGI(TAG_MAIN, "Reading: %0.3f g", ((float)(data+298450))/700.0);
 
-        ESP_LOGI(TAG_MAIN, "Reading: %.2f", sensor_weight_get_reading(&sense_weighth));
+        temp = clock_get_time();
+        if (temp.minute != curr_time.minute) {
+            ESP_LOGI(TAG_MAIN, "Current time - %02hhu:%02hhu", temp.hour, temp.minute);
+            curr_time = temp;
+        }
 
-        vTaskDelay(1);
+        vTaskDelay(1000);
 
         #else
 
