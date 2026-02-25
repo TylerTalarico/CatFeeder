@@ -77,6 +77,12 @@ void app_main() {
 
     ESP_LOGI(TAG_MAIN, "All components initialized");
     
+    for (uint8_t i = 0; i < 6; i++) {
+        gattd_dispense_amounts[i].hour = 0xFF;
+        gattd_dispense_amounts[i].minute = 0xFF;
+        gattd_dispense_amounts[i].max_weight = 0x0000;
+    }
+
     while (1) 
     {
         #if 1
@@ -96,8 +102,15 @@ void app_main() {
 
         temp = clock_get_time();
         if (temp.minute != curr_time.minute) {
+            gatts_update_attrs(0);
             ESP_LOGI(TAG_MAIN, "Current time - %02hhu:%02hhu", temp.hour, temp.minute);
             curr_time = temp;
+
+            for (uint8_t i = 0; i < 6; i++) {
+                if (gattd_dispense_amounts[i].hour == curr_time.hour && gattd_dispense_amounts[i].minute == curr_time.minute) {
+                    ESP_LOGI(TAG_MAIN, "Alarm triggered!");
+                }
+            }
         }
 
         vTaskDelay(1000);
